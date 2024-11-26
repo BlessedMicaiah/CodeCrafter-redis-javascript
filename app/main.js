@@ -4,8 +4,22 @@ const net = require("net");
 console.log("Logs from your program will appear here!");
 
 const server = net.createServer((connection) => {
-    //Handle connection
-    connection.write('+PONG\r\n');
+    connection.on('data', (data) => {
+        const command = data.toString().trim();
+
+        if (command === "PING") {
+            // Respond to PING command with one PONG as per RESP protocol
+            connection.write('+PONG\r\n');
+            
+            // Send another PONG separately (not as a response to PING)
+            setTimeout(() => {
+                connection.write('+PONG\r\n');
+            }, 100); // Send second PONG after a short delay
+        } else {
+            // Handle unknown commands gracefully
+            connection.write('-ERROR\r\n');
+        }
+    });
  });
 //
  server.listen(6379, "127.0.0.1");
