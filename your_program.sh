@@ -7,7 +7,7 @@
 # Learn more: https://codecrafters.io/program-interface
 
 set -e # Exit early if any commands fail
-
+echo "success"
 # Copied from .codecrafters/run.sh
 #
 # - Edit this to change how your program runs locally
