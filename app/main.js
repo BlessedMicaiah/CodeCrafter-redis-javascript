@@ -6,8 +6,7 @@ console.log("Logs from your program will appear here!");
 const server = net.createServer((connection) => {
     if (command === "PING"){
         connection.write('+PONG\r\n');
-    }
-    else{
+    } else{
         connection.write('ERROR\r\n');
     }
  });
