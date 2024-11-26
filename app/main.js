@@ -14,7 +14,7 @@ const server = net.createServer((connection) => {
             connection.write('+PONG\r\n');
         } else {
             // Respond with a valid Redis error for unknown commands
-            connection.write('-ERR unknown command\r\n');
+            connection.write('-ERROR\r\n');
         }
     });
 
