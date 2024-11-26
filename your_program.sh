@@ -14,6 +14,10 @@ then
     echo "redis-cli could not be found. Please install it first."
     exit
 fi
+
+redis-cli -p 6379 <<EOF
+HEY
+EOF
 # Copied from .codecrafters/run.sh
 #
 # - Edit this to change how your program runs locally
