@@ -6,13 +6,19 @@ const server = net.createServer((connection) => {
     connection.on('data', (data) => {
         const command = data.toString().trim();
 
-        // Parse the RESP command for ECHO
-        if (command.startsWith("*2\r\n$4\r\nECHO")) {
-            // Extract the second argument (the string to echo)
+        // Parse the RESP command for PING
+        if (command.startsWith("*1\r\n$4\r\nPING")) {
+            // Respond with a simple string for PING
+            connection.write("+PONG\r\n");
+        } else if (command.startsWith("*2\r\n$4\r\nPING")) {
+            // Extract the second argument (message to respond with)
             const parts = command.split("\r\n");
-            const echoMessage = parts[4]; // "mango" or the message to be echoed
-
-            // Respond with the echoed message as a bulk string
+            const pingMessage = parts[4]; // The message argument
+            connection.write(`$${pingMessage.length}\r\n${pingMessage}\r\n`);
+        } else if (command.startsWith("*2\r\n$4\r\nECHO")) {
+            // Parse the RESP command for ECHO
+            const parts = command.split("\r\n");
+            const echoMessage = parts[4]; // The message to echo
             connection.write(`$${echoMessage.length}\r\n${echoMessage}\r\n`);
         } else {
             // Respond with a valid Redis error for unknown commands
