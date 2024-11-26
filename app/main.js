@@ -22,7 +22,7 @@ const server = net.createServer((connection) => {
             connection.write(`$${echoMessage.length}\r\n${echoMessage}\r\n`);
         } else {
             // Respond with a valid Redis error for unknown commands
-            connection.write("-ERROR\r\n");
+            connection.write("-ERR \r\n");
         }
     });
 
