@@ -4,16 +4,19 @@ console.log("Starting custom Redis server...");
 
 const server = net.createServer((connection) => {
     connection.on('data', (data) => {
-        // Parse incoming RESP message
         const command = data.toString().trim();
 
-        // RESP for "HEY" command
-        if (command === "*1\r\n$3\r\nHEY") {
-            // Send RESP response: "+hey\r\n"
-            connection.write("+hey\r\n");
+        // Parse the RESP command for ECHO
+        if (command.startsWith("*2\r\n$4\r\nECHO")) {
+            // Extract the second argument (the string to echo)
+            const parts = command.split("\r\n");
+            const echoMessage = parts[4]; // "mango" or the message to be echoed
+
+            // Respond with the echoed message as a bulk string
+            connection.write(`$${echoMessage.length}\r\n${echoMessage}\r\n`);
         } else {
-            // Unknown commands respond with an error
-            connection.write("-ERROR\r\n");
+            // Respond with a valid Redis error for unknown commands
+            connection.write("-ERR unknown command\r\n");
         }
     });
 
