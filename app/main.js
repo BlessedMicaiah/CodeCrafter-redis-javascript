@@ -1,29 +1,27 @@
 const net = require("net");
 
-console.log("Logs from your program will appear here!");
+console.log("Starting custom Redis server...");
 
 const server = net.createServer((connection) => {
     connection.on('data', (data) => {
-        // Convert the buffer to a string and process the RESP format
+        // Parse incoming RESP message
         const command = data.toString().trim();
 
-        // RESP format: "*1\r\n$4\r\nPING\r\n"
-        // Parse the RESP command
-        if (command === "*1\r\n$4\r\nPING") {
-            // Respond with a simple string for PING
-            connection.write('+PONG\r\n');
+        // RESP for "HEY" command
+        if (command === "*1\r\n$3\r\nHEY") {
+            // Send RESP response: "+hey\r\n"
+            connection.write("+hey\r\n");
         } else {
-            // Respond with a valid Redis error for unknown commands
-            connection.write('-ERROR\r\n');
+            // Unknown commands respond with an error
+            connection.write("-ERROR\r\n");
         }
     });
 
-    // Handle errors 
     connection.on('error', (err) => {
         console.error('Connection error:', err.message);
     });
 });
 
-server.listen(6380, "127.0.0.1", () => {
-    console.log("Server is listening on port 6379");
+server.listen(6379, "127.0.0.1", () => {
+    console.log("Custom Redis server is listening on port 6379");
 });
