@@ -22,13 +22,13 @@ const server = net.createServer((connection) => {
         const parts = command.split("\r\n");
 
         if (parts[2] === "SET") {
-            const key = parts[4];  // Key
-            const value = parts[6]; // Value
+            // Handle SET command
+            const key = parts[4];
+            const value = parts[6];
             let expiry = null;
 
-            // Check if the command has more arguments (for PX)
             if (parts.length > 8) {
-                const option = parts[8].toUpperCase(); // Handle case insensitivity
+                const option = parts[8].toUpperCase();
                 const expiryInMs = parseInt(parts[10], 10);
 
                 if (option === "PX" && !isNaN(expiryInMs)) {
@@ -39,18 +39,17 @@ const server = net.createServer((connection) => {
                 }
             }
 
-            // Store the key-value pair and set expiry if applicable
             store[key] = value;
             if (expiry !== null) {
                 expiryTimes[key] = Date.now() + expiry;
             } else {
-                delete expiryTimes[key]; // Remove any existing expiry
+                delete expiryTimes[key];
             }
-
             connection.write("+OK\r\n");
 
         } else if (parts[2] === "GET") {
-            const key = parts[4]; // Key
+            // Handle GET command
+            const key = parts[4];
             if (isKeyExpired(key)) {
                 connection.write("$-1\r\n");
             } else if (key in store) {
@@ -62,6 +61,11 @@ const server = net.createServer((connection) => {
 
         } else if (parts[2] === "PING") {
             connection.write("+PONG\r\n");
+
+        } else if (parts[2] === "ECHO") {
+            // Handle ECHO command
+            const message = parts[4];
+            connection.write(`$${message.length}\r\n${message}\r\n`);
 
         } else {
             connection.write("-ERR syntax error\r\n");
