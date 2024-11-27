@@ -2,9 +2,7 @@ const net = require("net");
 
 // In-memory storage for key-value pairs and expiration times
 const store = {};
-const expiryTimes = {}; // Stores expiration times (key: expiration timestamp in ms)
-
-console.log("Starting custom Redis server...");
+const expiryTimes = {};
 
 // Function to check if a key is expired
 const isKeyExpired = (key) => {
@@ -16,48 +14,43 @@ const isKeyExpired = (key) => {
     return false;
 };
 
+console.log("Starting custom Redis server...");
+
 const server = net.createServer((connection) => {
     connection.on("data", (data) => {
         const command = data.toString().trim();
+        const parts = command.split("\r\n");
 
-        if (command.startsWith("*1\r\n$4\r\nPING")) {
-            connection.write("+PONG\r\n");
+        if (parts[2] === "SET") {
+            const key = parts[4];  // Key
+            const value = parts[6]; // Value
+            let expiry = null;
 
-        } else if (command.startsWith("*2\r\n$4\r\nECHO")) {
-            const parts = command.split("\r\n");
-            const echoMessage = parts[4];
-            connection.write(`$${echoMessage.length}\r\n${echoMessage}\r\n`);
+            // Check if the command has more arguments (for PX)
+            if (parts.length > 8) {
+                const option = parts[8].toUpperCase(); // Handle case insensitivity
+                const expiryInMs = parseInt(parts[10], 10);
 
-        } else if (command.startsWith("*5\r\n$3\r\nSET")) {
-            // Handle SET key value PX milliseconds
-            const parts = command.split("\r\n");
-            const key = parts[4];
-            const value = parts[6];
-            const option = parts[8]; // Should be "PX"
-            const expiryInMs = parseInt(parts[10], 10);
-
-            if (option === "PX" && !isNaN(expiryInMs)) {
-                store[key] = value;
-                expiryTimes[key] = Date.now() + expiryInMs;
-                connection.write("+OK\r\n");
-            } else {
-                connection.write("-ERR syntax error\r\n");
+                if (option === "PX" && !isNaN(expiryInMs)) {
+                    expiry = expiryInMs;
+                } else {
+                    connection.write("-ERR syntax error\r\n");
+                    return;
+                }
             }
 
-        } else if (command.startsWith("*3\r\n$3\r\nSET")) {
-            // Handle basic SET command without PX
-            const parts = command.split("\r\n");
-            const key = parts[4];
-            const value = parts[6];
-
+            // Store the key-value pair and set expiry if applicable
             store[key] = value;
-            delete expiryTimes[key]; // No expiration if PX is not used
+            if (expiry !== null) {
+                expiryTimes[key] = Date.now() + expiry;
+            } else {
+                delete expiryTimes[key]; // Remove any existing expiry
+            }
+
             connection.write("+OK\r\n");
 
-        } else if (command.startsWith("*2\r\n$3\r\nGET")) {
-            const parts = command.split("\r\n");
-            const key = parts[4];
-
+        } else if (parts[2] === "GET") {
+            const key = parts[4]; // Key
             if (isKeyExpired(key)) {
                 connection.write("$-1\r\n");
             } else if (key in store) {
@@ -66,6 +59,9 @@ const server = net.createServer((connection) => {
             } else {
                 connection.write("$-1\r\n");
             }
+
+        } else if (parts[2] === "PING") {
+            connection.write("+PONG\r\n");
 
         } else {
             connection.write("-ERR syntax error\r\n");
